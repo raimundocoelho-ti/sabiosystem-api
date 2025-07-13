@@ -1,4 +1,5 @@
-// internal/domain/category/service.go
+// Cole este código completo em internal/domain/category/service.go
+
 package category
 
 import (
@@ -51,15 +52,19 @@ func (s *service) CreateCategory(dto CreateCategoryDTO) (Category, error) {
 	return s.repo.Create(category)
 }
 
+// UpdateCategory contém a lógica de atualização corrigida.
 func (s *service) UpdateCategory(id uint, dto UpdateCategoryDTO) (Category, error) {
-	// Primeiro, busca a categoria para garantir que ela existe
-	category, err := s.repo.FindByID(id)
+	// 1. Busca a categoria para garantir que ela existe.
+	categoryToUpdate, err := s.repo.FindByID(id)
 	if err != nil {
-		return Category{}, err // Retorna erro se a categoria não for encontrada
+		// 2. Se não encontrou (erro != nil), retorna o erro imediatamente.
+		//    Isso impede que o código continue.
+		return Category{}, err
 	}
 
-	category.Name = dto.Name
-	return s.repo.Update(category)
+	// 3. Se encontrou, atualiza o nome e salva.
+	categoryToUpdate.Name = dto.Name
+	return s.repo.Update(categoryToUpdate)
 }
 
 func (s *service) DeleteCategory(id uint) error {

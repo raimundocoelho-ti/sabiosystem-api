@@ -40,6 +40,7 @@ func (r *repository) FindAll(page, perPage int) ([]Category, int64, error) {
 
 func (r *repository) FindByID(id uint) (Category, error) {
 	var category Category
+	// Esta é a linha 43 (ou próxima a ela)
 	err := r.db.First(&category, id).Error
 	return category, err
 }
