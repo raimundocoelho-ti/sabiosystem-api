@@ -1,0 +1,9 @@
+# .gitignore
+
+# Arquivo de variáveis de ambiente
+.env
+
+# Binários compilados
+*.exe
+*.exe~
+sabiosystem-api
