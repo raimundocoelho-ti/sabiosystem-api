@@ -1,25 +1,32 @@
-// internal/domain/category/model.go
+/*
+|------------------------------------------------
+| File: internal/domain/category/model.go
+| Developer: Raimundo Coelho
+| GitHub: https://github.com/raimundocoelho-ti
+| ------------------------------------------------
+*/
 package category
 
 import "time"
 
 // Category representa a entidade no banco de dados.
-// As tags `gorm` e `json` mapeiam os campos da struct para a tabela e para as respostas JSON.
 type Category struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	Name      string    `gorm:"unique;not null" json:"name"`
+	AgentID   uint      `gorm:"not null" json:"agent_id"` // <-- MUDANÇA: Adicionado AgentID
+	Name      string    `gorm:"not null" json:"name"`     // Removi o 'unique' daqui. Nomes podem se repetir entre agentes diferentes.
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // CreateCategoryDTO é o Data Transfer Object para a criação de uma categoria.
 type CreateCategoryDTO struct {
-	Name string `json:"name" binding:"required"`
+	AgentID uint   `json:"agent_id"` // <-- MUDANÇA: Adicionado AgentID
+	Name    string `json:"name"`
 }
 
 // UpdateCategoryDTO é o Data Transfer Object para a atualização de uma categoria.
 type UpdateCategoryDTO struct {
-	Name string `json:"name" binding:"required"`
+	Name string `json:"name"`
 }
 
 // PaginatedCategories é a estrutura de resposta para a lista paginada de categorias.

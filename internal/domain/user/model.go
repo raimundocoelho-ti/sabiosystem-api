@@ -17,14 +17,15 @@ import (
 // User representa a entidade no banco de dados.
 type User struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
+	AgentID   uint      `gorm:"not null" json:"agent_id"` // <-- MUDANÇA: Adicionado AgentID
 	Name      string    `gorm:"not null" json:"name"`
-	Email     string    `gorm:"unique;not null" json:"email"`
-	Password  string    `gorm:"not null" json:"-"` // O 'json:"-"' impede que a senha seja exposta em respostas JSON
+	Email     string    `gorm:"not null" json:"email"` // A unicidade do email agora deve ser por agente.
+	Password  string    `gorm:"not null" json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Antes de salvar, cria um hash da senha
+// Antes de salvar, cria um hash da senha.
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 	if u.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
@@ -38,6 +39,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 
 // CreateUserDTO é o DTO para a criação de um usuário.
 type CreateUserDTO struct {
+	AgentID  uint   `json:"agent_id"` // <-- MUDANÇA: Adicionado AgentID
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`

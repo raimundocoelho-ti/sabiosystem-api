@@ -9,13 +9,12 @@ package category
 
 import "github.com/graphql-go/graphql"
 
-// --- TYPES ---
-
 var categoryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Category",
 		Fields: graphql.Fields{
 			"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"agent_id":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA: Expondo o agent_id
 			"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"created_at": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"updated_at": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -36,78 +35,81 @@ var paginatedCategoriesType = graphql.NewObject(
 	},
 )
 
-// --- QUERIES ---
-
 func GetQueryFields(service Service) graphql.Fields {
 	return graphql.Fields{
-		// Query paginada original
 		"categories": &graphql.Field{
 			Type:        paginatedCategoriesType,
-			Description: "Obtém uma lista paginada de categorias.",
+			Description: "Obtém categorias para um agente específico.",
 			Args: graphql.FieldConfigArgument{
-				"page": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"page":    &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				page, _ := p.Args["page"].(int)
-				return service.GetAllCategories(page)
+				return service.GetAllCategories(uint(agentId), page)
 			},
 		},
-		// Query por ID original
 		"category": &graphql.Field{
 			Type:        categoryType,
-			Description: "Obtém uma única categoria pelo seu ID.",
+			Description: "Obtém uma categoria pelo seu ID, dentro de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				id, _ := p.Args["id"].(int)
-				return service.GetCategoryByID(uint(id))
+				return service.GetCategoryByID(uint(agentId), uint(id))
 			},
 		},
-		// Nova query de busca
 		"searchCategories": &graphql.Field{
 			Type:        graphql.NewList(categoryType),
-			Description: "Busca categorias por nome.",
+			Description: "Busca categorias por nome, dentro de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String), // Argumento obrigatório
-				},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"name":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				name, _ := p.Args["name"].(string)
-				return service.SearchCategories(name)
+				return service.SearchCategories(uint(agentId), name)
 			},
 		},
 	}
 }
 
-// --- MUTATIONS ---
-
-// GetMutationFields retorna os campos de mutation para o módulo de categoria.
 func GetMutationFields(service Service) graphql.Fields {
 	return graphql.Fields{
 		"createCategory": &graphql.Field{
 			Type:        categoryType,
-			Description: "Cria uma nova categoria.",
+			Description: "Cria uma nova categoria para um agente.",
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				// ↓↓ MUDANÇA PRINCIPAL AQUI ↓↓
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"name":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				// O agentId é capturado...
+				agentId, _ := p.Args["agentId"].(int)
 				name, _ := p.Args["name"].(string)
-				return service.CreateCategory(CreateCategoryDTO{Name: name})
+				// ...e passado para o serviço através do DTO.
+				return service.CreateCategory(CreateCategoryDTO{AgentID: uint(agentId), Name: name})
 			},
 		},
 		"updateCategory": &graphql.Field{
 			Type:        categoryType,
-			Description: "Atualiza uma categoria existente.",
+			Description: "Atualiza uma categoria de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
-				"name": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"name":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				id, _ := p.Args["id"].(int)
 				name, _ := p.Args["name"].(string)
-				return service.UpdateCategory(uint(id), UpdateCategoryDTO{Name: name})
+				return service.UpdateCategory(uint(agentId), uint(id), UpdateCategoryDTO{Name: name})
 			},
 		},
 		"deleteCategory": &graphql.Field{
@@ -115,13 +117,15 @@ func GetMutationFields(service Service) graphql.Fields {
 				Name:   "DeleteCategoryPayload",
 				Fields: graphql.Fields{"deletedId": &graphql.Field{Type: graphql.Int}, "success": &graphql.Field{Type: graphql.Boolean}},
 			}),
-			Description: "Deleta uma categoria pelo seu ID.",
+			Description: "Deleta uma categoria de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				id, _ := p.Args["id"].(int)
-				err := service.DeleteCategory(uint(id))
+				err := service.DeleteCategory(uint(agentId), uint(id))
 				if err != nil {
 					return nil, err
 				}

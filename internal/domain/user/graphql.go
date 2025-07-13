@@ -9,13 +9,12 @@ package user
 
 import "github.com/graphql-go/graphql"
 
-// --- TYPES ---
-
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
 		Fields: graphql.Fields{
 			"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"agent_id":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
 			"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"email":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"created_at": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -37,70 +36,66 @@ var paginatedUsersType = graphql.NewObject(
 	},
 )
 
-// --- QUERIES ---
-
 func GetQueryFields(service Service) graphql.Fields {
-	// A versão corrigida retorna todos os campos de query para o usuário
 	return graphql.Fields{
-		// 1. A query paginada (que tinha sumido)
 		"users": &graphql.Field{
 			Type:        paginatedUsersType,
-			Description: "Obtém uma lista paginada de usuários.",
+			Description: "Obtém usuários de um agente específico.",
 			Args: graphql.FieldConfigArgument{
-				"page": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"page":    &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				page, _ := p.Args["page"].(int)
-				return service.GetAllUsers(page)
+				return service.GetAllUsers(uint(agentId), page)
 			},
 		},
-		// 2. A query por ID (que tinha sumido)
 		"user": &graphql.Field{
 			Type:        userType,
-			Description: "Obtém um único usuário pelo seu ID.",
+			Description: "Obtém um usuário pelo ID, dentro de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				id, _ := p.Args["id"].(int)
-				return service.GetUserByID(uint(id))
+				return service.GetUserByID(uint(agentId), uint(id))
 			},
 		},
-		// 3. A nova query de busca (que já tínhamos adicionado)
 		"searchUsers": &graphql.Field{
-			Type:        graphql.NewList(userType), // Retorna uma lista de usuários
-			Description: "Busca usuários por nome e/ou email.",
+			Type:        graphql.NewList(userType),
+			Description: "Busca usuários por nome/email, dentro de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{
-					Type: graphql.String,
-				},
-				"email": &graphql.ArgumentConfig{
-					Type: graphql.String,
-				},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"name":    &graphql.ArgumentConfig{Type: graphql.String},
+				"email":   &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				name, _ := p.Args["name"].(string)
 				email, _ := p.Args["email"].(string)
-				return service.SearchUsers(name, email)
+				return service.SearchUsers(uint(agentId), name, email)
 			},
 		},
 	}
 }
 
-// --- MUTATIONS ---
-
 func GetMutationFields(service Service) graphql.Fields {
 	return graphql.Fields{
 		"createUser": &graphql.Field{
 			Type:        userType,
-			Description: "Cria um novo usuário.",
+			Description: "Cria um novo usuário para um agente.",
 			Args: graphql.FieldConfigArgument{
+				"agentId":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
 				"name":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"email":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				dto := CreateUserDTO{
+					AgentID:  uint(p.Args["agentId"].(int)),
 					Name:     p.Args["name"].(string),
 					Email:    p.Args["email"].(string),
 					Password: p.Args["password"].(string),
@@ -110,19 +105,21 @@ func GetMutationFields(service Service) graphql.Fields {
 		},
 		"updateUser": &graphql.Field{
 			Type:        userType,
-			Description: "Atualiza um usuário existente.",
+			Description: "Atualiza um usuário de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
-				"name":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"email": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"name":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"email":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				id := p.Args["id"].(int)
+				agentId, _ := p.Args["agentId"].(int)
+				id, _ := p.Args["id"].(int)
 				dto := UpdateUserDTO{
 					Name:  p.Args["name"].(string),
 					Email: p.Args["email"].(string),
 				}
-				return service.UpdateUser(uint(id), dto)
+				return service.UpdateUser(uint(agentId), uint(id), dto)
 			},
 		},
 		"deleteUser": &graphql.Field{
@@ -130,13 +127,15 @@ func GetMutationFields(service Service) graphql.Fields {
 				Name:   "DeleteUserPayload",
 				Fields: graphql.Fields{"deletedId": &graphql.Field{Type: graphql.Int}, "success": &graphql.Field{Type: graphql.Boolean}},
 			}),
-			Description: "Deleta um usuário pelo seu ID.",
+			Description: "Deleta um usuário de um agente.",
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"agentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)}, // <-- MUDANÇA
+				"id":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				agentId, _ := p.Args["agentId"].(int)
 				id, _ := p.Args["id"].(int)
-				err := service.DeleteUser(uint(id))
+				err := service.DeleteUser(uint(agentId), uint(id))
 				if err != nil {
 					return nil, err
 				}
