@@ -1,10 +1,9 @@
-// internal/router/router.go
 package router
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category" // <-- ATUALIZE O CAMINHO
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
 )
 
 // SetupRoutes configura as rotas da aplicação.

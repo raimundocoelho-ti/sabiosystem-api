@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/raimundocoelho-ti/sabiosystem-api/config"                   // <-- ATUALIZE O CAMINHO
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/database"        // <-- ATUALIZE O CAMINHO
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category" // <-- ATUALIZE O CAMINHO
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/router"          // <-- ATUALIZE O CAMINHO
+	"github.com/raimundocoelho-ti/sabiosystem-api/config"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/database"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/router"
 )
 
 func main() {
