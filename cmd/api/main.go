@@ -12,14 +12,15 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"log"
 	"os"
-	
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/graphql-go/handler"
 	"github.com/raimundocoelho-ti/sabiosystem-api/config"
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/database"
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category" // Caminho corrigido
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/agent"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user" // <-- Caminho Corrigido
 	gql "github.com/raimundocoelho-ti/sabiosystem-api/internal/graphql"
 )
 
@@ -32,11 +33,14 @@ func main() {
 	categoryService := category.NewService(categoryRepo)
 	userRepo := user.NewRepository(database.DB)
 	userService := user.NewService(userRepo)
+	agentRepo := agent.NewRepository(database.DB)
+	agentService := agent.NewService(agentRepo)
 
-	// 2. Agrupar serviços para passar ao montador de schema
+	// 2. Agrupar todos os serviços para passar ao montador de schema
 	schemaServices := gql.SchemaServices{
 		CategorySvc: categoryService,
 		UserSvc:     userService,
+		AgentSvc:    agentService,
 	}
 
 	// 3. Criar o schema a partir dos serviços agrupados
