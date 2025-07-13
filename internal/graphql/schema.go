@@ -9,7 +9,8 @@ package graphql
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/agent" // <-- Importante: Adicionar import do agent
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/auth" // <-- CORRIGIDO
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/agent"
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user"
 )
@@ -18,16 +19,17 @@ import (
 type SchemaServices struct {
 	CategorySvc category.Service
 	UserSvc     user.Service
-	AgentSvc    agent.Service // <-- Importante: Adicionar o serviço do agent
+	AgentSvc    agent.Service
+	AuthSvc     auth.Service
 }
 
 // NewSchema cria e retorna o schema GraphQL completo, montado a partir dos módulos.
 func NewSchema(services SchemaServices) (graphql.Schema, error) {
-	// Juntando os campos de Query de todos os módulos
+	// Juntando os campos de Query de todos os módulos (auth não tem queries)
 	queryFields := mergeFields(
 		category.GetQueryFields(services.CategorySvc),
 		user.GetQueryFields(services.UserSvc),
-		agent.GetQueryFields(services.AgentSvc), // <-- Importante: Adicionar as queries do agent
+		agent.GetQueryFields(services.AgentSvc),
 	)
 
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
@@ -39,7 +41,8 @@ func NewSchema(services SchemaServices) (graphql.Schema, error) {
 	mutationFields := mergeFields(
 		category.GetMutationFields(services.CategorySvc),
 		user.GetMutationFields(services.UserSvc),
-		agent.GetMutationFields(services.AgentSvc), // <-- Importante: Adicionar as mutations do agent
+		agent.GetMutationFields(services.AgentSvc),
+		auth.GetMutationFields(services.AuthSvc, services.UserSvc, services.AgentSvc),
 	)
 
 	rootMutation := graphql.NewObject(graphql.ObjectConfig{

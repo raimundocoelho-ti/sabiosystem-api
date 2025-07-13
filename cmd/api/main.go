@@ -5,7 +5,6 @@
 | GitHub: https://github.com/raimundocoelho-ti
 | ------------------------------------------------
 */
-
 package main
 
 import (
@@ -17,10 +16,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/graphql-go/handler"
 	"github.com/raimundocoelho-ti/sabiosystem-api/config"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/auth" // <-- CORRIGIDO
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/database"
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/agent"
 	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
-	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user" // <-- Caminho Corrigido
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user"
 	gql "github.com/raimundocoelho-ti/sabiosystem-api/internal/graphql"
 )
 
@@ -28,19 +28,22 @@ func main() {
 	config.LoadConfig()
 	database.ConnectDB()
 
-	// 1. Instanciar repositórios e serviços para TODOS os módulos
+	// 1. Instanciar todos os repositórios e serviços
 	categoryRepo := category.NewRepository(database.DB)
 	categoryService := category.NewService(categoryRepo)
 	userRepo := user.NewRepository(database.DB)
 	userService := user.NewService(userRepo)
 	agentRepo := agent.NewRepository(database.DB)
 	agentService := agent.NewService(agentRepo)
+	authRepo := auth.NewRepository(database.DB)
+	authService := auth.NewService(authRepo)
 
-	// 2. Agrupar todos os serviços para passar ao montador de schema
+	// 2. Agrupar todos os serviços para o montador de schema
 	schemaServices := gql.SchemaServices{
 		CategorySvc: categoryService,
 		UserSvc:     userService,
 		AgentSvc:    agentService,
+		AuthSvc:     authService,
 	}
 
 	// 3. Criar o schema a partir dos serviços agrupados
