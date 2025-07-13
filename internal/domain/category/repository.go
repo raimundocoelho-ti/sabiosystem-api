@@ -7,6 +7,7 @@ import "gorm.io/gorm"
 type Repository interface {
 	FindAll(page, perPage int) ([]Category, int64, error)
 	FindByID(id uint) (Category, error)
+	Search(name string) ([]Category, error)
 	Create(category Category) (Category, error)
 	Update(category Category) (Category, error)
 	Delete(id uint) error
@@ -43,6 +44,13 @@ func (r *repository) FindByID(id uint) (Category, error) {
 	// Esta é a linha 43 (ou próxima a ela)
 	err := r.db.First(&category, id).Error
 	return category, err
+}
+
+func (r *repository) Search(name string) ([]Category, error) {
+	var categories []Category
+	// Usando ILIKE para busca parcial e case-insensitive
+	err := r.db.Where("name ILIKE ?", "%"+name+"%").Find(&categories).Error
+	return categories, err
 }
 
 func (r *repository) Create(category Category) (Category, error) {

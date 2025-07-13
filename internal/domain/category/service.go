@@ -12,6 +12,7 @@ const PageSize = 8 // Itens por página
 type Service interface {
 	GetAllCategories(page int) (PaginatedCategories, error)
 	GetCategoryByID(id uint) (Category, error)
+	SearchCategories(name string) ([]Category, error)
 	CreateCategory(dto CreateCategoryDTO) (Category, error)
 	UpdateCategory(id uint, dto UpdateCategoryDTO) (Category, error)
 	DeleteCategory(id uint) error
@@ -45,6 +46,10 @@ func (s *service) GetAllCategories(page int) (PaginatedCategories, error) {
 
 func (s *service) GetCategoryByID(id uint) (Category, error) {
 	return s.repo.FindByID(id)
+}
+
+func (s *service) SearchCategories(name string) ([]Category, error) {
+	return s.repo.Search(name)
 }
 
 func (s *service) CreateCategory(dto CreateCategoryDTO) (Category, error) {

@@ -1,91 +1,63 @@
-// Cole este código em internal/graphql/schema.go
+/*
+|------------------------------------------------
+| File: internal/graphql/schema.go
+| Developer: Raimundo Coelho
+| GitHub: https://github.com/raimundocoelho-ti
+| ------------------------------------------------
+*/
 package graphql
 
 import (
 	"github.com/graphql-go/graphql"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/category"
+	"github.com/raimundocoelho-ti/sabiosystem-api/internal/domain/user"
 )
 
-// NewSchema cria e retorna o schema GraphQL completo para a aplicação.
-func NewSchema(resolver *Resolver) (graphql.Schema, error) {
-	// RootQuery define os pontos de entrada para consultas (leitura de dados)
+// SchemaServices contém todos os serviços necessários para construir o schema.
+type SchemaServices struct {
+	CategorySvc category.Service
+	UserSvc     user.Service
+}
+
+// NewSchema cria e retorna o schema GraphQL completo, montado a partir dos módulos.
+func NewSchema(services SchemaServices) (graphql.Schema, error) {
+	// Juntando os campos de Query de todos os módulos
+	queryFields := mergeFields(
+		category.GetQueryFields(services.CategorySvc),
+		user.GetQueryFields(services.UserSvc),
+	)
+
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
-		Name: "RootQuery",
-		Fields: graphql.Fields{
-			"categories": &graphql.Field{
-				Type:        PaginatedCategoriesType,
-				Description: "Obtém uma lista paginada de categorias.",
-				Args: graphql.FieldConfigArgument{
-					"page": &graphql.ArgumentConfig{
-						Type:         graphql.Int,
-						DefaultValue: 1,
-					},
-				},
-				Resolve: resolver.resolveCategories,
-			},
-			"category": &graphql.Field{
-				Type:        CategoryType,
-				Description: "Obtém uma única categoria pelo seu ID.",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.Int),
-					},
-				},
-				Resolve: resolver.resolveCategory,
-			},
-		},
+		Name:   "RootQuery",
+		Fields: queryFields,
 	})
 
-	// RootMutation define os pontos de entrada para modificações (escrita de dados)
+	// Juntando os campos de Mutation de todos os módulos
+	mutationFields := mergeFields(
+		category.GetMutationFields(services.CategorySvc),
+		user.GetMutationFields(services.UserSvc),
+	)
+
 	rootMutation := graphql.NewObject(graphql.ObjectConfig{
-		Name: "RootMutation",
-		Fields: graphql.Fields{
-			"createCategory": &graphql.Field{
-				Type:        CategoryType,
-				Description: "Cria uma nova categoria.",
-				Args: graphql.FieldConfigArgument{
-					"name": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-				},
-				Resolve: resolver.resolveCreateCategory,
-			},
-			"updateCategory": &graphql.Field{
-				Type:        CategoryType,
-				Description: "Atualiza uma categoria existente.",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.Int),
-					},
-					"name": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-				},
-				Resolve: resolver.resolveUpdateCategory,
-			},
-			"deleteCategory": &graphql.Field{
-				Type: graphql.NewObject(graphql.ObjectConfig{
-					Name: "DeleteCategoryPayload",
-					Fields: graphql.Fields{
-						"deletedId": &graphql.Field{Type: graphql.Int},
-						"success":   &graphql.Field{Type: graphql.Boolean},
-					},
-				}),
-				Description: "Deleta uma categoria pelo seu ID.",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.Int),
-					},
-				},
-				Resolve: resolver.resolveDeleteCategory,
-			},
-		},
+		Name:   "RootMutation",
+		Fields: mutationFields,
 	})
 
-	// O Schema final que une Queries e Mutations
 	schemaConfig := graphql.SchemaConfig{
 		Query:    rootQuery,
 		Mutation: rootMutation,
 	}
 
 	return graphql.NewSchema(schemaConfig)
+}
+
+// mergeFields é uma função utilitária para juntar múltiplos mapas de campos.
+func mergeFields(fieldMaps ...graphql.Fields) graphql.Fields {
+	result := graphql.Fields{}
+	for _, fieldMap := range fieldMaps {
+		for key, value := range fieldMap {
+			result[key] = value
+		}
+	}
+	return result
 }
